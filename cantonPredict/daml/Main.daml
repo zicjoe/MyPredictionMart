@@ -1,0 +1,176 @@
+module Main where
+
+import Daml.Script
+import DA.Foldable (forA_)
+
+
+-- Possible outcomes of a prediction
+data Outcome = Yes | No
+  deriving (Eq, Show)
+
+-- Status of the market
+data MarketStatus
+  = Open
+  | Resolved Outcome
+  deriving (Eq, Show)
+
+data MarketSpec = MarketSpec with
+    marketId  : Text
+    question  : Text
+    yesLabel  : Text
+    noLabel   : Text
+    dataSource : Text
+  deriving (Eq, Show)
+
+
+-- One prediction market
+template Market
+  with
+    marketId  : Text
+    creator   : Party
+    oracle    : Party
+    question  : Text
+    yesLabel  : Text
+    noLabel   : Text
+    dataSource : Text           -- where real-world truth comes from (API, index, feed)
+    status    : MarketStatus
+    resolutionEvidence : Optional Text -- how the oracle justified the result
+  where
+    signatory creator
+    observer  oracle
+
+    -- Oracle resolves the market to a final outcome, based on verifiable off-ledger data.
+    -- In practice, an off-ledger oracle service would:
+    --   1) call the external data source named in dataSource
+    --   2) decide the Outcome
+    --   3) include a human-readable or machine-verifiable evidence string
+    --   4) exercise this choice via JSON API / gRPC
+    choice Resolve : ContractId Market
+      with
+        final    : Outcome
+        evidence : Text
+      controller oracle
+      do
+        case status of
+          Open ->
+            create this
+              with
+                status = Resolved final
+                resolutionEvidence = Some evidence
+          Resolved _ ->
+            abort "Market already resolved"
+
+
+
+-- A single bet on a given market
+template Bet
+  with
+    marketCid : ContractId Market
+    user      : Party
+    outcome   : Outcome
+    amount    : Decimal
+    claimed   : Bool
+  where
+    signatory user
+    observer  user
+
+    -- Winner can claim payout after resolution
+    choice Claim : Decimal
+      controller user
+        do
+          market <- fetch marketCid
+          case market.status of
+            Resolved final ->
+              if final == outcome && not claimed then do
+                archive self
+                pure (amount * 2.0)
+              else
+                abort "Not eligible to claim"
+            Open ->
+              abort "Market not resolved yet"
+
+
+-- Demo script: full flow from creation to resolution and claim
+setup : Script ()
+setup = script do
+  -- Parties
+  creator <- allocateParty "Creator"
+  oracle  <- allocateParty "Oracle"
+  alice   <- allocateParty "Alice"
+  bob     <- allocateParty "Bob"
+
+  -- 1) Creator creates a market
+  marketCid <- submit creator do
+    createCmd Market
+      with
+        marketId  = "M1"
+        creator   = creator
+        oracle    = oracle
+        question  = "Will BTC be above 100k by 2030-01-01?"
+        yesLabel  = "Yes, above 100k"
+        noLabel   = "No, below 100k"
+        dataSource = "Official BTC/USD price from Coinbase API at 2030-01-01T00:00Z"
+        status    = Open
+        resolutionEvidence = None
+
+  -- 2) Alice and Bob place bets
+  aliceBetCid <- submit alice do
+    createCmd Bet
+      with
+        marketCid = marketCid
+        user      = alice
+        outcome   = Yes
+        amount    = 50.0
+        claimed   = False
+
+  bobBetCid <- submit bob do
+    createCmd Bet
+      with
+        marketCid = marketCid
+        user      = bob
+        outcome   = No
+        amount    = 50.0
+        claimed   = False
+
+  -- 3) Oracle resolves market in favour of YES,
+  --    providing a verifiable evidence string
+  _resolvedMarketCid <- submit oracle do
+    exerciseCmd marketCid Resolve
+      with
+        final    = Yes
+        evidence = "BTC price 102,000 USD from Coinbase API at 2030-01-01T00:00Z"
+
+  -- 4) Alice (winner) claims payout
+  alicePayout <- submit alice do
+    exerciseCmd aliceBetCid Claim
+
+  debug ("Alice payout: " <> show alicePayout)
+
+  -- 5) Bob (loser) tries to claim and should fail
+  submitMustFail bob do
+    exerciseCmd bobBetCid Claim
+
+  pure ()
+
+
+setupFromJson : [MarketSpec] -> Script ()
+setupFromJson specs = script do
+  -- parties (or re-use what you already have)
+  creator <- allocatePartyWithHint "Creator" (PartyIdHint "Creator")
+  oracle  <- allocatePartyWithHint "Oracle"  (PartyIdHint "Oracle")
+
+  -- loop over each spec from the JSON
+  forA_ specs \s -> do
+    submit creator do
+      createCmd Market with
+        marketId  = s.marketId
+        creator   = creator
+        oracle    = oracle
+        question  = s.question
+        yesLabel  = s.yesLabel
+        noLabel   = s.noLabel
+        dataSource = s.dataSource
+        status    = Open
+        resolutionEvidence = None
+
+  pure ()

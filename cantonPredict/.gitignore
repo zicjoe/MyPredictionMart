@@ -1,0 +1,20 @@
+# Daml
+.daml/
+.daml/dist/
+.daml/state/
+.daml/lock
+*.dar
+
+# VS Code
+.vscode/
+
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.packages
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# OS junk
+.DS_Store
+Thumbs.db

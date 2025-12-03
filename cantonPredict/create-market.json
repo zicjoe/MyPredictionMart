@@ -1,0 +1,15 @@
+{
+  "templateId": "Main:Market",
+  "payload": {
+    "marketId": "M1",
+    "creator": "Creator:12206a2d6de694292a77b2f6ad72a13fb0d63b9af5a778bcf42cad960366d224f67a",
+    "oracle": "Oracle:12206a2d6de694292a77b2f6ad72a13fb0d63b9af5a778bcf42cad960366d224f67a",
+    "question": "Will BTC hit 100k by 2030?",
+    "yesLabel": "Yes",
+    "noLabel": "No",
+    "status": {
+      "tag": "Open",
+      "value": {}
+    }
+  }
+}

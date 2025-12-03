@@ -1,0 +1,14 @@
+[
+  {
+    "marketId": "M1",
+    "question": "Will BTC be above 100k by 2030-01-01?",
+    "yesLabel": "Yes, above 100k",
+    "noLabel": "No, below 100k"
+  },
+  {
+    "marketId": "M2",
+    "question": "Will ETH flip BTC by market cap by 2035?",
+    "yesLabel": "Yes, ETH flips BTC",
+    "noLabel": "No, BTC stays on top"
+  }
+]
