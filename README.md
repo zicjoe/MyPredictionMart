@@ -91,13 +91,74 @@ flutter pub get
 flutter run -d chrome
 
 ```
+## 🧪 Judge Testing Notes
 
+• The demo runs entirely locally using DAML Sandbox and Flutter Web.  
+• No external APIs are required.  
+• The "Submit Bet" action uses a local mock service for consistency.  
+• Market creation and resolution logic is fully implemented in DAML.  
+• Judges may browse the Main.daml file to view market, bet, and oracle logic.
+
+
+## 🏗 Architecture
+
++--------------------------+
+                   |      User (Web Browser)  |
+                   |  - Views markets         |
+                   |  - Places bets           |
+                   +------------+-------------+
+                                |
+                                | HTTP (Flutter Web)
+                                v
+                   +--------------------------+
+                   |      Flutter Frontend    |
+                   |  - Market list UI        |
+                   |  - Market detail page    |
+                   |  - "Submit bet" action   |
+                   |  - (Demo: mock service)  |
+                   +------------+-------------+
+                                |
+                                | (Future) JSON API calls
+                                v
+            +---------------------------------------------+
+            |          Canton JSON API (planned)         |
+            |  - Receives create / exercise commands     |
+            |  - Exposes queries for active markets      |
+            +--------------------+-----------------------+
+                                |
+                                | Ledger commands / updates
+                                v
+            +---------------------------------------------+
+            |            Canton Sandbox Ledger            |
+            |  - Executes DAML contracts                  |
+            |  - Enforces privacy & data partitioning     |
+            +--------------------+-----------------------+
+                                |
+                                | DAML templates
+                                v
+       +-------------------------------------------------------+
+       |                     DAML Contracts                    |
+       |                                                       |
+       |  Market template:                                     |
+       |   - creator, oracle, question                         |
+       |   - yesLabel, noLabel                                 |
+       |   - dataSource, status, resolutionEvidence            |
+       |   - Resolve choice (oracle-only, with evidence)       |
+       |                                                       |
+       |  Bet template:                                        |
+       |   - links to a Market                                 |
+       |   - outcome, amount, claimed                          |
+       |   - Claim choice (payout based on resolved outcome)   |
+       +-------------------------------------------------------+
+       
 ### Future Work
 -Wire the Flutter app directly to the Canton JSON API for live bets.
 - Add automated settlement and real token payouts.
 - Integrate a real oracle service that queries external APIs.
 - Extend markets to support more complex outcomes and odds.
 - Add user identity / party onboarding flows.
+
+
 
 
 ### Context
