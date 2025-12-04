@@ -102,47 +102,7 @@ flutter run -d chrome
 
 ## 🏗 Architecture
 
-+-------------------------------------------------------------+
-|                         User (Browser)                      |
-|  - Views markets                                            |
-|  - Places bets                                              |
-+------------------------------+------------------------------+
-                               |
-                               v
-+-------------------------------------------------------------+
-|                    Flutter Web Frontend                     |
-|  - UI for markets, outcomes, bet form                       |
-|  - Calls mock service (demo)                                |
-|  - Future: Calls Canton JSON API                            |
-+------------------------------+------------------------------+
-                               |
-                               v
-+-------------------------------------------------------------+
-|                  (Future) Canton JSON API                   |
-|  - Accepts commands (create/exercise)                       |
-|  - Returns ledger data                                      |
-+------------------------------+------------------------------+
-                               |
-                               v
-+-------------------------------------------------------------+
-|                     Canton Sandbox Ledger                   |
-|  - Executes DAML smart contracts                            |
-|  - Enforces privacy & data-partitioning                     |
-+------------------------------+------------------------------+
-                               |
-                               v
-+-------------------------------------------------------------+
-|                         DAML Contracts                      |
-|                                                             |
-|  Market                                                     |
-|   - Fields: creator, oracle, question, labels               |
-|   - Fields: dataSource, status, evidence                    |
-|   - Choice: Resolve (oracle-only)                           |
-|                                                             |
-|  Bet                                                        |
-|   - Fields: outcome, amount, claimed                        |
-|   - Choice: Claim (payout logic)                            |
-+-------------------------------------------------------------+
+https://raw.githubusercontent.com/zicjoe/MyPredictionMart/main/architecture.png
        
 ### Future Work
 -Wire the Flutter app directly to the Canton JSON API for live bets.
